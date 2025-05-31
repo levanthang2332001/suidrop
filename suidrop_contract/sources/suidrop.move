@@ -28,7 +28,8 @@ module suidrop::suidrop {
         last_airdrop_time: u64,
         min_airdrop_amount: u64,
         max_airdrop_amount: u64,
-        cooldown_period: u64
+        cooldown_period: u64,
+        admins: vector<address>
     }
 
     /// Event emitted when an airdrop occurs
@@ -78,6 +79,10 @@ module suidrop::suidrop {
         // Create the initial coin supply
         let coins = coin::mint(&mut treasury_cap, INITIAL_SUPPLY, ctx);
         
+        // Create initial admin list with deployer
+        let mut admins = vector::empty<address>();
+        vector::push_back(&mut admins, tx_context::sender(ctx));
+
         // Create the airdrop authority
         let authority = AirdropAuthority {
             id: object::new(ctx),
@@ -86,7 +91,8 @@ module suidrop::suidrop {
             last_airdrop_time: 0,
             min_airdrop_amount: MIN_AIRDROP,
             max_airdrop_amount: MAX_AIRDROP,
-            cooldown_period: COOLDOWN_PERIOD
+            cooldown_period: COOLDOWN_PERIOD,
+            admins
         };
 
         // Transfer the authority to the deployer
@@ -121,6 +127,11 @@ module suidrop::suidrop {
         balance::join(&mut authority.airdrop_balance, coin_balance);
     }
 
+    /// Check if an address is an admin
+    public fun is_admin(authority: &AirdropAuthority, addr: address): bool {
+        vector::contains(&authority.admins, &addr)
+    }
+
     /// Perform airdrop to multiple addresses with equal distribution
     public entry fun batch_airdrop(
         authority: &mut AirdropAuthority,
@@ -129,8 +140,8 @@ module suidrop::suidrop {
         clock: &Clock,
         ctx: &mut tx_context::TxContext
     ) {
-        // Check if the caller is the owner
-        assert!(tx_context::sender(ctx) == tx_context::sender(ctx), EUnauthorized);
+        // Check if the caller is an admin
+        assert!(is_admin(authority, tx_context::sender(ctx)), EUnauthorized);
         
         // Check if recipients list is not empty
         let recipients_count = vector::length(&recipients);
@@ -173,4 +184,141 @@ module suidrop::suidrop {
             timestamp: current_time,
         });
     }
+
+    #[test_only]
+    use sui::test_scenario;
+    #[test_only]
+    use sui::test_utils::assert_eq;
+    #[test_only]
+    use sui::test_utils;
+
+    #[test]
+    fun test_init(ctx: &mut tx_context::TxContext) {
+        let sender = tx_context::sender(ctx);
+
+        test_scenario::next_tx(&mut scenario, sender);
+        let authority: AirdropAuthority = test_scenario::take_from_sender<AirdropAuthority>(&scenario);
+
+        // Check: admin đầu tiên đúng là deployer
+        assert!(vector::contains(&authority.admins, &sender), 100);
+
+        test_scenario::return_to_sender(&scenario, authority);
+        test_scenario::end(scenario);
+    }
+
+    // #[test]
+    // fun test_batch_airdrop() {
+    //     let deployer = @0xA;
+    //     let mut scenario = init_test_scenario(deployer);
+        
+    //     // Setup recipients
+    //     let recipient1 = @0xB;
+    //     let recipient2 = @0xC;
+    //     let mut recipients = vector::empty<address>();
+    //     vector::push_back(&mut recipients, recipient1);
+    //     vector::push_back(&mut recipients, recipient2);
+        
+    //     let total_amount = MIN_AIRDROP * 2;
+        
+    //     test_scenario::next_tx(&mut scenario, deployer);
+    //     {
+    //         let mut authority = test_scenario::take_from_sender<AirdropAuthority>(&scenario);
+    //         let clock = test_scenario::take_shared<Clock>(&scenario);
+            
+    //         // Perform batch airdrop
+    //         batch_airdrop(
+    //             &mut authority,
+    //             recipients,
+    //             total_amount,
+    //             &clock,
+    //             test_scenario::ctx(&mut scenario)
+    //         );
+            
+    //         // Check remaining balance
+    //         let remaining_balance = balance::value(&authority.airdrop_balance);
+    //         assert!(remaining_balance == INITIAL_SUPPLY - total_amount, 0);
+            
+    //         test_scenario::return_to_sender(&scenario, authority);
+    //         test_scenario::return_shared(clock);
+    //     };
+        
+    //     // Verify recipients received their coins
+    //     test_scenario::next_tx(&mut scenario, recipient1);
+    //     {
+    //         let coin = test_scenario::take_from_sender<Coin<SUIDROP>>(&scenario);
+    //         assert!(coin::value(&coin) == MIN_AIRDROP, 1);
+    //         test_scenario::return_to_sender(&scenario, coin);
+    //     };
+        
+    //     test_scenario::next_tx(&mut scenario, recipient2);
+    //     {
+    //         let coin = test_scenario::take_from_sender<Coin<SUIDROP>>(&scenario);
+    //         assert!(coin::value(&coin) == MIN_AIRDROP, 2);
+    //         test_scenario::return_to_sender(&scenario, coin);
+    //     };
+        
+    //     test_scenario::end(scenario);
+    // }
+
+    // #[test]
+    // #[expected_failure(abort_code = EUnauthorized)]
+    // fun test_unauthorized_batch_airdrop() {
+    //     let deployer = @0xA;
+    //     let unauthorized_user = @0xB;
+    //     let mut scenario = init_test_scenario(deployer);
+        
+    //     let mut recipients = vector::empty<address>();
+    //     vector::push_back(&mut recipients, @0xC);
+        
+    //     // Try to perform batch airdrop as unauthorized user
+    //     test_scenario::next_tx(&mut scenario, unauthorized_user);
+    //     {
+    //         let mut authority = test_scenario::take_from_sender<AirdropAuthority>(&scenario);
+    //         let clock = test_scenario::take_shared<Clock>(&scenario);
+            
+    //         batch_airdrop(
+    //             &mut authority,
+    //             recipients,
+    //             MIN_AIRDROP,
+    //             &clock,
+    //             test_scenario::ctx(&mut scenario)
+    //         );
+            
+    //         test_scenario::return_to_sender(&scenario, authority);
+    //         test_scenario::return_shared(clock);
+    //     };
+        
+    //     test_scenario::end(scenario);
+    // }
+
+    // #[test]
+    // #[expected_failure(abort_code = EInvalidAmount)]
+    // fun test_invalid_amount_batch_airdrop() {
+    //     let deployer = @0xA;
+    //     let mut scenario = init_test_scenario(deployer);
+        
+    //     let mut recipients = vector::empty<address>();
+    //     vector::push_back(&mut recipients, @0xB);
+    //     vector::push_back(&mut recipients, @0xC);
+        
+    //     // Try to perform batch airdrop with amount too small per recipient
+    //     test_scenario::next_tx(&mut scenario, deployer);
+    //     {
+    //         let mut authority = test_scenario::take_from_sender<AirdropAuthority>(&scenario);
+    //         let clock = test_scenario::take_shared<Clock>(&scenario);
+            
+    //         batch_airdrop(
+    //             &mut authority,
+    //             recipients,
+    //             MIN_AIRDROP - 1, // Invalid amount
+    //             &clock,
+    //             test_scenario::ctx(&mut scenario)
+    //         );
+            
+    //         test_scenario::return_to_sender(&scenario, authority);
+    //         test_scenario::return_shared(clock);
+    //     };
+        
+    //     test_scenario::end(scenario);
+    // }
 }
