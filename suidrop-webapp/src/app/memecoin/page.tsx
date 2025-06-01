@@ -66,6 +66,17 @@ const LaunchMemeCoin = () => {
                 />
               </div>
             </div>
+            <div>
+              <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="description">
+                Description
+              </label>
+              <input
+                id="description"
+                type="text"
+                placeholder="e.g. The funniest coin on chain..."
+                className="w-full px-3 py-2 border rounded-md border-meme-border bg-white/80 text-meme-text placeholder:text-meme-border focus:outline-none focus:ring-2 focus:ring-meme-primary"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="date">
@@ -95,46 +106,31 @@ const LaunchMemeCoin = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label className="font-bold text-meme-primaryDark" htmlFor="fcfs">
-                FCFS
-              </label>
+              {/* <label className="font-bold text-meme-primaryDark" htmlFor="fcfs">
+                
+              </label> */}
               <Switch id="fcfs" />
               <label htmlFor="fcfs" className="text-sm text-meme-text">Enable First Come First Serve</label>
             </div>
+            <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="description">
-                Description
-              </label>
+              <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="slot">Slot</label>
               <input
-                id="description"
-                type="text"
-                placeholder="e.g. The funniest coin on chain..."
+                id="slot"
+                type="number"
+                placeholder="e.g. 100"
                 className="w-full px-3 py-2 border rounded-md border-meme-border bg-white/80 text-meme-text placeholder:text-meme-border focus:outline-none focus:ring-2 focus:ring-meme-primary"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="website">
-                  Website URL
-                </label>
-                <input
-                  id="website"
-                  type="url"
-                  placeholder="e.g. https://memecoin.com"
-                  className="w-full px-3 py-2 border rounded-md border-meme-border bg-white/80 text-meme-text placeholder:text-meme-border focus:outline-none focus:ring-2 focus:ring-meme-primary"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="telegram">
-                  Telegram Group
-                </label>
-                <input
-                  id="telegram"
-                  type="url"
-                  placeholder="e.g. https://t.me/memecoin"
-                  className="w-full px-3 py-2 border rounded-md border-meme-border bg-white/80 text-meme-text placeholder:text-meme-border focus:outline-none focus:ring-2 focus:ring-meme-primary"
-                />
-              </div>
+            <div>
+              <label className="block mb-1 font-bold text-meme-primaryDark" htmlFor="quantity">Quantity</label>
+              <input
+                id="quantity"
+                type="number"
+                placeholder="e.g. 100"
+                className="w-full px-3 py-2 border rounded-md border-meme-border bg-white/80 text-meme-text placeholder:text-meme-border focus:outline-none focus:ring-2 focus:ring-meme-primary"
+              />
+            </div>
             </div>
             <Button
               type="submit"
